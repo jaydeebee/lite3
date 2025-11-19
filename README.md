@@ -10,7 +10,7 @@
 ![](img/lite3_seamless_dark.png)
 ![](img/lite3_infographic_dark.png)
 
-# [Official Documentation (with examples): https://lite3.io/](https://lite3.io/)
+## [Official Documentation (with examples): https://lite3.io/](https://lite3.io/)
 
 ## Introduction
 Lite³ is a JSON-compatible zero-copy serialization format able to encode semi-structured data in a lightweight binary format, suitable for embedded and no-malloc environments. The flagship feature is the possibility to apply **mutations directly on the serialized form**. With Lite³, you can insert any arbitrary key, with any arbitrary value, directly into a serialized message. Essentially, it functions as a *serialized dictionary*.  
@@ -105,7 +105,7 @@ Therefore to answer a query like 'find tweet by ID', the actual bytes read may b
 Converting the dataset to Lite³ (a zero-copy format) to answer the exact same queries
 presents an opportunity to quantify this advantage and reveal something about the cost of text formats.
 
-<img src="lite3_benchmark_simdjson_twitter_api_data.png" width="1119">
+![](img/lite3_benchmark_simdjson_twitter_api_data.png)
 
 | Format               | top_tweet        | partial_tweets   | find_tweet       | distinct_user_id |
 | -------------------- | ---------------- | ---------------- | ---------------- | ---------------- |
@@ -132,9 +132,8 @@ So instead, the emphasis will be on text-to-binary conversion.
 Because Lite³ stores numbers natively in 64 bits, there is no need to parse and convert ASCII-decimals.
 This conversion can be tricky for floating point numbers in particular.
 
-<img src="lite3_benchmark_kostya_json_execution_time.png" width="866">
-
-<img src="lite3_benchmark_kostya_json_memory_usage.png" width="857">
+![](img/lite3_benchmark_kostya_json_execution_time.png)
+![](img/lite3_benchmark_kostya_json_memory_usage.png)
 
 | Language / Library            | Execution Time       | Memory Usage         |
 | ----------------------------- | -------------------- | -------------------- |
@@ -170,7 +169,7 @@ The measurements cover the time required to serialize, deserialize and traverse 
 The Cista++ authors created three variants for their format, notably the 'offset' and 'offset slim' variants
 where the edges use indices to reference nodes instead of pointers.
 
-<img src="lite3_benchmark_cpp_serialization.png" width="1158">
+![](img/lite3_benchmark_cpp_serialization.png)
 
 | Name                  | Serialize + Deserialize | Deserialize | Serialize   | Traverse    | Deserialize and traverse | Message size    |
 | --------------------- |------------------------ | ----------- | ----------- | ----------- | ------------------------ | --------------- |
