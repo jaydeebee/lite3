@@ -338,7 +338,7 @@ cd lite3/
 ```
 Then choose between installation via `pkg-config` or manual linking.
 
-#### Installation via `pkg-config` (easiest)
+#### Installation via pkg-config (easiest)
 Inside the project root, run:
 ```
 sudo make install -j
