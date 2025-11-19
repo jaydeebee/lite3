@@ -1,16 +1,10 @@
-<!--!
-@mainpage Introduction
-@tableofcontents
--->
-
 # Lite³: A JSON-Compatible Zero-Copy Serialization Format
 *Parse no more—the wire format is the memory format.*
-
 
 ![](img/lite3_seamless_dark.png)
 ![](img/lite3_infographic_dark.png)
 
-## [Official Documentation (with examples): https://lite3.io/](https://lite3.io/)
+<h2><a href="https://lite3.io">Official Documentation (with examples): lite3.io</a></h2>
 
 ## Introduction
 Lite³ is a JSON-compatible zero-copy serialization format able to encode semi-structured data in a lightweight binary format, suitable for embedded and no-malloc environments. The flagship feature is the possibility to apply **mutations directly on the serialized form**. With Lite³, you can insert any arbitrary key, with any arbitrary value, directly into a serialized message. Essentially, it functions as a *serialized dictionary*.  
@@ -698,3 +692,5 @@ Lite³ is released under the MIT License. Refer to the LICENSE file for details.
 
 For JSON conversion, Lite³ also includes `yyjson`, the fastest JSON library in C.
 `yyjson` is written by YaoYuan and also released under the MIT License.
+
+@tableofcontents

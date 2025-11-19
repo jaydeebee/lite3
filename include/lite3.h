@@ -2685,7 +2685,7 @@ Functions to deal with opaque values
 
 The lite3_val struct represents a value inside a Lite³ buffer.
 
-@defgroup lite3_val_fns `lite3_val` functions
+@defgroup lite3_val_fns lite3_val functions
 @{
 */
 /**
