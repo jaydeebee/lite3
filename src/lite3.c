@@ -661,11 +661,13 @@ int lite3_set_impl(
 		}
 	}
 insert_append:
-	size_t key_size_tmp = (key_data.size << LITE3_KEY_TAG_KEY_SIZE_SHIFT) | (key_tag_size - 1);
-	memcpy(buf + *inout_buflen, &key_size_tmp, key_tag_size);
-	*inout_buflen += key_tag_size;
-	memcpy(buf + *inout_buflen, key, (size_t)key_data.size);
-	*inout_buflen += (size_t)key_data.size;
+	if (key) {
+		size_t key_size_tmp = (key_data.size << LITE3_KEY_TAG_KEY_SIZE_SHIFT) | (key_tag_size - 1);
+		memcpy(buf + *inout_buflen, &key_size_tmp, key_tag_size);
+		*inout_buflen += key_tag_size;
+		memcpy(buf + *inout_buflen, key, (size_t)key_data.size);
+		*inout_buflen += (size_t)key_data.size;
+	}
 	*out = (lite3_val *)(buf + *inout_buflen);
 	*inout_buflen += LITE3_VAL_SIZE + val_len;
 	return 0;
