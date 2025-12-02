@@ -239,9 +239,12 @@ int lite3_get_impl(
 					+ !!key_data.size);
 
 	struct node *restrict node = __builtin_assume_aligned((struct node *)(buf + ofs), LITE3_NODE_ALIGNMENT);
-	assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);
-	// *buf + ofs must be aligned to LITE3_NODE_ALIGNMENT
 
+	if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+		LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+		errno = EBADMSG;
+		return -1;
+	}
 
 	int key_count;
 	int i;
@@ -264,8 +267,12 @@ int lite3_get_impl(
 		if (node->child_ofs[0]) {						// if children, walk to next node
 			size_t next_node_ofs = (size_t)node->child_ofs[i];
 			node = __builtin_assume_aligned((struct node *)(buf + next_node_ofs), LITE3_NODE_ALIGNMENT);
-			assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);
 
+			if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+				LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+				errno = EBADMSG;
+				return -1;
+			}
 			if (LITE3_UNLIKELY(next_node_ofs > buflen - LITE3_NODE_SIZE)) {
 				LITE3_PRINT_ERROR("NODE WALK OFFSET OUT OF BOUNDS\n");
 				errno = EFAULT;
@@ -289,7 +296,12 @@ int lite3_iter_create_impl(const unsigned char *buf, size_t buflen, size_t ofs, 
 	LITE3_PRINT_DEBUG("CREATE ITER\n");
 
 	struct node *restrict node = __builtin_assume_aligned((struct node *)(buf + ofs), LITE3_NODE_ALIGNMENT);
-	assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);			// node must be aligned to LITE3_NODE_ALIGNMENT
+
+	if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+		LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+		errno = EBADMSG;
+		return -1;
+	}
 
 	enum lite3_type type = node->gen_type & LITE3_NODE_TYPE_MASK;
 	if (LITE3_UNLIKELY(!(type == LITE3_TYPE_OBJECT || type == LITE3_TYPE_ARRAY))) {
@@ -306,8 +318,12 @@ int lite3_iter_create_impl(const unsigned char *buf, size_t buflen, size_t ofs, 
 		u32 next_node_ofs = node->child_ofs[0];
 
 		node = __builtin_assume_aligned((struct node *)(buf + next_node_ofs), LITE3_NODE_ALIGNMENT);
-		assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);
 
+		if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+			LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+			errno = EBADMSG;
+			return -1;
+		}
 		if (LITE3_UNLIKELY(++out->depth > LITE3_TREE_HEIGHT_MAX)) {
 			LITE3_PRINT_ERROR("NODE WALKS EXCEEDED LITE3_TREE_HEIGHT_MAX\n");
 			errno = EBADMSG;
@@ -341,7 +357,12 @@ int lite3_iter_next(const unsigned char *buf, size_t buflen, lite3_iter *iter, l
 	}
 
 	struct node *restrict node = __builtin_assume_aligned((struct node *)(buf + iter->node_ofs[iter->depth]), LITE3_NODE_ALIGNMENT);
-	assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);			// node must be aligned to LITE3_NODE_ALIGNMENT
+
+	if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+		LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+		errno = EBADMSG;
+		return -1;
+	}
 
 	enum lite3_type type = node->gen_type & LITE3_NODE_TYPE_MASK;
 	if (LITE3_UNLIKELY(!(type == LITE3_TYPE_OBJECT || type == LITE3_TYPE_ARRAY))) {
@@ -379,8 +400,12 @@ int lite3_iter_next(const unsigned char *buf, size_t buflen, lite3_iter *iter, l
 		u32 next_node_ofs = node->child_ofs[iter->node_i[iter->depth]];
 
 		node = __builtin_assume_aligned((struct node *)(buf + next_node_ofs), LITE3_NODE_ALIGNMENT);
-		assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);
-
+		
+		if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+			LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+			errno = EBADMSG;
+			return -1;
+		}
 		if (LITE3_UNLIKELY(++iter->depth > LITE3_TREE_HEIGHT_MAX)) {
 			LITE3_PRINT_ERROR("NODE WALKS EXCEEDED LITE3_TREE_HEIGHT_MAX\n");
 			errno = EBADMSG;
@@ -397,7 +422,12 @@ int lite3_iter_next(const unsigned char *buf, size_t buflen, lite3_iter *iter, l
 	while (iter->depth > 0 && (iter->node_i[iter->depth] == (node->size_kc & LITE3_NODE_KEY_COUNT_MASK))) { // key_count reached, go up
 		--iter->depth;
 		node = __builtin_assume_aligned((struct node *)(buf + iter->node_ofs[iter->depth]), LITE3_NODE_ALIGNMENT);
-		assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);
+		
+		if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+			LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+			errno = EBADMSG;
+			return -1;
+		}
 		#ifdef LITE3_PREFETCHING
 		__builtin_prefetch(buf + node->child_ofs[(iter->node_i[iter->depth] + 1) & LITE3_NODE_KEY_COUNT_MASK],      0, 2); // prefetch next nodes
 		__builtin_prefetch(buf + node->child_ofs[(iter->node_i[iter->depth] + 1) & LITE3_NODE_KEY_COUNT_MASK] + 64, 0, 2);
@@ -422,7 +452,6 @@ static inline void _lite3_init_impl(unsigned char *buf, size_t ofs, enum lite3_t
 	LITE3_PRINT_DEBUG("INITIALIZE %s\n", type == LITE3_TYPE_OBJECT ? "OBJECT" : "ARRAY");
 
 	struct node *node = (struct node *)(buf + ofs);
-	assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);			// node must be aligned to LITE3_NODE_ALIGNMENT
 	node->gen_type = type & LITE3_NODE_TYPE_MASK;
 	node->size_kc = 0x00;
 	#ifdef LITE3_ZERO_MEM_EXTRA
@@ -493,7 +522,12 @@ int lite3_set_impl(
 
 	struct node *restrict parent = NULL;
 	struct node *restrict node = __builtin_assume_aligned((struct node *)(buf + ofs), LITE3_NODE_ALIGNMENT);
-	assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);				// *buf + ofs must be aligned to LITE3_NODE_ALIGNMENT
+	
+	if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+		LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+		errno = EBADMSG;
+		return -1;
+	}
 
 	u32 gen = node->gen_type >> LITE3_NODE_GEN_SHIFT;
 	++gen;
@@ -519,9 +553,19 @@ int lite3_set_impl(
 				LITE3_PRINT_DEBUG("NEW ROOT\n");
 				memcpy(buf + *inout_buflen, node, LITE3_NODE_SIZE);
 				node = __builtin_assume_aligned((struct node *)(buf + *inout_buflen), LITE3_NODE_ALIGNMENT);
-				assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);
+				
+				if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+					LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+					errno = EBADMSG;
+					return -1;
+				}
 				parent = __builtin_assume_aligned((struct node *)(buf + ofs), LITE3_NODE_ALIGNMENT);
-				assert(((uintptr_t)parent & LITE3_NODE_ALIGNMENT_MASK) == 0);
+				
+				if (LITE3_UNLIKELY(((uintptr_t)parent & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+					LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+					errno = EBADMSG;
+					return -1;
+				}
 				#ifdef LITE3_ZERO_MEM_EXTRA
 					memset(parent->hashes, LITE3_ZERO_MEM_8, sizeof(((struct node *)0)->hashes));
 					memset(parent->kv_ofs, LITE3_ZERO_MEM_8, sizeof(((struct node *)0)->kv_ofs));
@@ -549,7 +593,12 @@ int lite3_set_impl(
 				node->kv_ofs[LITE3_NODE_KEY_COUNT_MIN] = LITE3_ZERO_MEM_32;
 			#endif
 			struct node *restrict sibling = __builtin_assume_aligned((struct node *)(buf + *inout_buflen), LITE3_NODE_ALIGNMENT);
-			assert(((uintptr_t)sibling & LITE3_NODE_ALIGNMENT_MASK) == 0);
+			
+			if (LITE3_UNLIKELY(((uintptr_t)sibling & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+				LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+				errno = EBADMSG;
+				return -1;
+			}
 			#ifdef LITE3_ZERO_MEM_EXTRA
 				memset(sibling->hashes, LITE3_ZERO_MEM_8, sizeof(((struct node *)0)->hashes));
 				memset(sibling->kv_ofs, LITE3_ZERO_MEM_8, sizeof(((struct node *)0)->kv_ofs));
@@ -572,7 +621,12 @@ int lite3_set_impl(
 			}
 			if (key_data.hash > parent->hashes[i]) {				// sibling has target key? then we follow
 				node = __builtin_assume_aligned(sibling, LITE3_NODE_ALIGNMENT);
-				assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);
+				
+				if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+					LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+					errno = EBADMSG;
+					return -1;
+				}
 			}
 			*inout_buflen += LITE3_NODE_SIZE;
 		}
@@ -619,10 +673,13 @@ int lite3_set_impl(
 			size_t next_node_ofs = (size_t)node->child_ofs[i];
 
 			parent = __builtin_assume_aligned(node, LITE3_NODE_ALIGNMENT);
-			assert(((uintptr_t)parent & LITE3_NODE_ALIGNMENT_MASK) == 0);
 			node = __builtin_assume_aligned((struct node *)(buf + next_node_ofs), LITE3_NODE_ALIGNMENT);
-			assert(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) == 0);
-
+			
+			if (LITE3_UNLIKELY(((uintptr_t)node & LITE3_NODE_ALIGNMENT_MASK) != 0)) {
+				LITE3_PRINT_ERROR("NODE OFFSET NOT ALIGNED TO LITE3_NODE_ALIGNMENT\n");
+				errno = EBADMSG;
+				return -1;
+			}
 			if (LITE3_UNLIKELY(next_node_ofs > *inout_buflen - LITE3_NODE_SIZE)) {
 				LITE3_PRINT_ERROR("NODE WALK OFFSET OUT OF BOUNDS\n");
 				errno = EFAULT;
