@@ -25,7 +25,7 @@ Example to illustrate:
 3. After all operations are done, the structure can be transmitted 'as-is' (no serialization required, just `memcpy()`)
 4. The receiver then has access to all the same operations
 
-Typically, in such a scenario a distinc 'serializing' and 'deserializing' step would be required.
+Typically, in such a scenario a distinct 'serializing' and 'deserializing' step would be required.
 However Lite³ blurs the line between memory and wire formats, allowing direct access, traversal and mutation of a serialized buffer.
 
 
