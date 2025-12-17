@@ -117,6 +117,7 @@ static_assert(sizeof(((struct node *)0)->gen_type) == sizeof(((lite3_iter *)0)->
         Verify a key inside the buffer to ensure readers don't go out of bounds.
                 Optionally compare the existing key to an input key; a mismatch implies a hash collision.
                 - Returns 0 on success
+                - Returns 1 on probe hash collision (caller must retry with different hash)
                 - Returns < 0 on failure
         
         [ NOTE ] For internal use only.
@@ -223,23 +224,27 @@ int lite3_get_impl(
 	lite3_key_data key_data,        // key data struct
 	lite3_val **out)                // value entry pointer (out pointer)
 {
-	uint32_t base_hash = key_data.hash;
-	uint32_t probe_attempts = key ? LITE3_HASH_PROBE_MAX : 1U;
+	#ifdef LITE3_DEBUG
+	if (*(buf + ofs) == LITE3_TYPE_OBJECT) {
+		LITE3_PRINT_DEBUG("GET\tkey: %s\n", key);
+	} else if (*(buf + ofs) == LITE3_TYPE_ARRAY) {
+		LITE3_PRINT_DEBUG("GET\tindex: %u\n", key_data.hash);
+	} else {
+		LITE3_PRINT_DEBUG("GET INVALID: EXEPCTING ARRAY OR OBJECT TYPE\n");
+	}
+	#endif
+
 	size_t key_tag_size = (size_t)((!!(key_data.size >> (16 - LITE3_KEY_TAG_KEY_SIZE_SHIFT)) << 1)
 					+ !!(key_data.size >> (8 - LITE3_KEY_TAG_KEY_SIZE_SHIFT))
 					+ !!key_data.size);
 
+	uint32_t probe_attempts = key ? LITE3_HASH_PROBE_MAX : 1U;
 	for (uint32_t attempt = 0; attempt < probe_attempts; attempt++) {
+		
 		lite3_key_data attempt_key = key_data;
-		attempt_key.hash = lite3_probe_hash(base_hash, attempt);
+		attempt_key.hash = key_data.hash + attempt * attempt;
 		#ifdef LITE3_DEBUG
-		if (*(buf + ofs) == LITE3_TYPE_OBJECT) {
-			LITE3_PRINT_DEBUG("GET\tkey: %s (probe %u)\n", key, attempt);
-		} else if (*(buf + ofs) == LITE3_TYPE_ARRAY) {
-			LITE3_PRINT_DEBUG("GET\tindex: %u\n", attempt_key.hash);
-		} else {
-			LITE3_PRINT_DEBUG("GET INVALID: EXEPCTING ARRAY OR OBJECT TYPE\n");
-		}
+			LITE3_PRINT_DEBUG("probe attempt: %u\thash: %u\n", attempt, attempt_key.hash);
 		#endif
 
 		struct node *restrict node = __builtin_assume_aligned((struct node *)(buf + ofs), LITE3_NODE_ALIGNMENT);
@@ -517,8 +522,16 @@ int lite3_set_impl(
 	size_t val_len,                 // value length (bytes)
 	lite3_val **out)                // value entry pointer (out pointer)
 {
-	uint32_t base_hash = key_data.hash;
-	uint32_t probe_attempts = key ? LITE3_HASH_PROBE_MAX : 1U;
+	#ifdef LITE3_DEBUG
+	if (*(buf + ofs) == LITE3_TYPE_OBJECT) {
+		LITE3_PRINT_DEBUG("SET\tkey: %s\n", key);
+	} else if (*(buf + ofs) == LITE3_TYPE_ARRAY) {
+		LITE3_PRINT_DEBUG("SET\tindex: %u\n", key_data.hash);
+	} else {
+		LITE3_PRINT_DEBUG("SET INVALID: EXEPCTING ARRAY OR OBJECT TYPE\n");
+	}
+	#endif
+
 	size_t key_tag_size = (size_t)((!!(key_data.size >> (16 - LITE3_KEY_TAG_KEY_SIZE_SHIFT)) << 1)
 					+ !!(key_data.size >> (8 - LITE3_KEY_TAG_KEY_SIZE_SHIFT))
 					+ !!key_data.size);
@@ -536,24 +549,23 @@ int lite3_set_impl(
 	++gen;
 	root->gen_type = (root->gen_type & ~LITE3_NODE_GEN_MASK) | (gen << LITE3_NODE_GEN_SHIFT);
 	
+	uint32_t probe_attempts = key ? LITE3_HASH_PROBE_MAX : 1U;
 	for (uint32_t attempt = 0; attempt < probe_attempts; attempt++) {
+		
 		lite3_key_data attempt_key = key_data;
-		attempt_key.hash = lite3_probe_hash(base_hash, attempt);
+		attempt_key.hash = key_data.hash + attempt * attempt;
+		#ifdef LITE3_DEBUG
+			LITE3_PRINT_DEBUG("probe attempt: %u\thash: %u\n", attempt, attempt_key.hash);
+		#endif
+
 		size_t entry_size = base_entry_size;
 		struct node *restrict parent = NULL;
 		struct node *restrict node = root;
+
 		int key_count;
 		int i;
 		int node_walks = 0;
-		#ifdef LITE3_DEBUG
-		if (*(buf + ofs) == LITE3_TYPE_OBJECT) {
-			LITE3_PRINT_DEBUG("SET\tkey: %s (probe %u)\n", key, attempt);
-		} else if (*(buf + ofs) == LITE3_TYPE_ARRAY) {
-			LITE3_PRINT_DEBUG("SET\tindex: %u\n", attempt_key.hash);
-		} else {
-			LITE3_PRINT_DEBUG("SET INVALID: EXEPCTING ARRAY OR OBJECT TYPE\n");
-		}
-		#endif
+
 		while (1) {
 			if ((node->size_kc & LITE3_NODE_KEY_COUNT_MASK) == LITE3_NODE_KEY_COUNT_MAX) {	// node full, need to split
 
@@ -740,22 +752,21 @@ int lite3_set_impl(
 				goto insert_append;
 			}
 		}
-		continue;
-insert_append:
-		if (key) {
-			size_t key_size_tmp = (attempt_key.size << LITE3_KEY_TAG_KEY_SIZE_SHIFT) | (key_tag_size - 1);
-			memcpy(buf + *inout_buflen, &key_size_tmp, key_tag_size);
-			*inout_buflen += key_tag_size;
-			memcpy(buf + *inout_buflen, key, (size_t)attempt_key.size);
-			*inout_buflen += (size_t)attempt_key.size;
-		}
-		*out = (lite3_val *)(buf + *inout_buflen);
-		*inout_buflen += LITE3_VAL_SIZE + val_len;
-		return 0;
 	}
 	LITE3_PRINT_ERROR("HASH COLLISION\n");
 	errno = EINVAL;
 	return -1;
+insert_append:
+	if (key) {
+		size_t key_size_tmp = (key_data.size << LITE3_KEY_TAG_KEY_SIZE_SHIFT) | (key_tag_size - 1);
+		memcpy(buf + *inout_buflen, &key_size_tmp, key_tag_size);
+		*inout_buflen += key_tag_size;
+		memcpy(buf + *inout_buflen, key, (size_t)key_data.size);
+		*inout_buflen += (size_t)key_data.size;
+	}
+	*out = (lite3_val *)(buf + *inout_buflen);
+	*inout_buflen += LITE3_VAL_SIZE + val_len;
+	return 0;
 }
 
 int lite3_set_obj_impl(unsigned char *buf, size_t *restrict inout_buflen, size_t ofs, size_t bufsz, const char *restrict key, lite3_key_data key_data, size_t *restrict out_ofs)

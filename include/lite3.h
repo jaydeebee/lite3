@@ -357,27 +357,22 @@ Changing this setting also requires changing other settings. See `struct node` i
 #define LITE3_NODE_SIZE_MASK ((u32)~((1 << 6) - 1)) // 26 MSB
 
 #define LITE3_DJB2_HASH_SEED ((uint32_t)5381)
-
-// Hash probing configuration (quadratic open addressing for 32-bit hashes: h_i = h_0 + i^2)
+#endif // DOXYGEN_IGNORE
 
 /**
 Enable hash probing to tolerate 32-bit hash collisions.
 
-Limit attempts with `LITE3_HASH_PROBE_MAX` (defaults to 256). Probing cannot be disabled.
+Hash probing configuration (quadratic open addressing for 32-bit hashes: h_i = h_0 + i^2)
+
+Limit attempts with `LITE3_HASH_PROBE_MAX` (defaults to 128). Probing cannot be disabled.
 */
 #ifndef LITE3_HASH_PROBE_MAX
-#define LITE3_HASH_PROBE_MAX 256U
+#define LITE3_HASH_PROBE_MAX 128U
 #endif
 
 #if LITE3_HASH_PROBE_MAX < 2
     #error "LITE3_HASH_PROBE_MAX must be >= 2"
 #endif
-
-static inline uint32_t lite3_probe_hash(uint32_t base_hash, uint32_t attempt) {
-        return base_hash + attempt * attempt;
-}
-
-#endif // DOXYGEN_IGNORE
 
 /**
 Macro to calculate DJB2 key hashes at compile-time
