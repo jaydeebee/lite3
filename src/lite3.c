@@ -116,8 +116,8 @@ static_assert(sizeof(((struct node *)0)->gen_type) == sizeof(((lite3_iter *)0)->
 /*
         Verify a key inside the buffer to ensure readers don't go out of bounds.
                 Optionally compare the existing key to an input key; a mismatch implies a hash collision.
-                - Returns 0 on success
-                - Returns 1 on probe hash collision (caller must retry with different hash)
+                - Returns LITE3_VERIFY_KEY_OK (== 0) on success
+                - Returns LITE3_VERIFY_KEY_HASH_COLLISION (== 1) on probe hash collision (caller must retry with different hash)
                 - Returns < 0 on failure
         
         [ NOTE ] For internal use only.
@@ -162,13 +162,13 @@ static inline int _verify_key(
 		);
 		if (LITE3_UNLIKELY(cmp != 0)) {
 			LITE3_PRINT_ERROR("HASH COLLISION\n");
-			return 1; // signal collision to caller (probe next hash)
+			return LITE3_VERIFY_KEY_HASH_COLLISION;
 		}
 	}
 	*inout_ofs += _key_size;
 	if (out_key_tag_size)
 		*out_key_tag_size = _key_tag_size;
-	return 0;
+	return LITE3_VERIFY_KEY_OK;
 }
 
 /*
@@ -267,8 +267,8 @@ int lite3_get_impl(
 				size_t target_ofs = node->kv_ofs[i];
 				if (key) {
 					int verify = _verify_key(buf, buflen, key, (size_t)attempt_key.size, key_tag_size, &target_ofs, NULL);
-					if (verify > 0)
-						break; // collision -> try next probe
+					if (verify == LITE3_VERIFY_KEY_HASH_COLLISION)
+						break; // try next probe
 					if (verify < 0)
 						return -1;
 				}
@@ -304,8 +304,8 @@ int lite3_get_impl(
 			}
 		}
 	}
-	LITE3_PRINT_ERROR("KEY NOT FOUND\n");
-	errno = ENOENT;
+	LITE3_PRINT_ERROR("LITE3_HASH_PROBE_MAX LIMIT REACHED\n");
+	errno = EINVAL;
 	return -1;
 }
 
@@ -651,6 +651,7 @@ int lite3_set_impl(
 						node->child_ofs[j + LITE3_NODE_KEY_COUNT_MIN + 2] = 0x00000000;
 					#endif
 				}
+				*inout_buflen += LITE3_NODE_SIZE;
 				if (attempt_key.hash > parent->hashes[i]) {				// sibling has target key? then we follow
 					node = __builtin_assume_aligned(sibling, LITE3_NODE_ALIGNMENT);
 					
@@ -659,21 +660,28 @@ int lite3_set_impl(
 						errno = EBADMSG;
 						return -1;
 					}
+				} else if (attempt_key.hash == parent->hashes[i]) {
+					node = __builtin_assume_aligned(parent, LITE3_NODE_ALIGNMENT);
+					LITE3_PRINT_DEBUG("GOTO SKIP\n");
+					goto key_match_skip;
 				}
-				*inout_buflen += LITE3_NODE_SIZE;
 			}
 
 			key_count = node->size_kc & LITE3_NODE_KEY_COUNT_MASK;
 			i = 0;
 			while (i < key_count && node->hashes[i] < attempt_key.hash)
 				i++;
+			
+			LITE3_PRINT_DEBUG("i: %i\tkc: %i\tnode->hashes[i]: %u\n", i, key_count, node->hashes[i]);
+
 			if (i < key_count && node->hashes[i] == attempt_key.hash) {			// matching key found, already exists?
+key_match_skip:
 				size_t target_ofs = node->kv_ofs[i];
 				size_t key_start_ofs = target_ofs;
 				if (key) {
 					int verify = _verify_key(buf, *inout_buflen, key, (size_t)attempt_key.size, key_tag_size, &target_ofs, NULL);
-					if (verify > 0)
-						break; // collision -> try next probe
+					if (verify == LITE3_VERIFY_KEY_HASH_COLLISION)
+						break; // try next probe
 					if (verify < 0)
 						return -1;
 				}
@@ -741,6 +749,7 @@ int lite3_set_impl(
 					node->hashes[j] = node->hashes[j - 1];
 					node->kv_ofs[j] = node->kv_ofs[j - 1];
 				}
+				LITE3_PRINT_DEBUG("INSERTING HASH: %u\ti: %i\n", attempt_key.hash, i);
 				node->hashes[i] = attempt_key.hash;
 				node->size_kc = (node->size_kc & ~LITE3_NODE_KEY_COUNT_MASK)
 				                  | ((node->size_kc + 1) & LITE3_NODE_KEY_COUNT_MASK);	// key_count++
@@ -754,21 +763,23 @@ int lite3_set_impl(
 				goto insert_append;
 			}
 		}
+		continue;
+insert_append:
+		if (key) {
+			size_t key_size_tmp = (attempt_key.size << LITE3_KEY_TAG_KEY_SIZE_SHIFT) | (key_tag_size - 1);
+			memcpy(buf + *inout_buflen, &key_size_tmp, key_tag_size);
+			*inout_buflen += key_tag_size;
+			memcpy(buf + *inout_buflen, key, (size_t)attempt_key.size);
+			*inout_buflen += (size_t)attempt_key.size;
+		}
+		*out = (lite3_val *)(buf + *inout_buflen);
+		*inout_buflen += LITE3_VAL_SIZE + val_len;
+		LITE3_PRINT_DEBUG("OK\n");
+		return 0;
 	}
-	LITE3_PRINT_ERROR("HASH COLLISION\n");
+	LITE3_PRINT_ERROR("LITE3_HASH_PROBE_MAX LIMIT REACHED\n");
 	errno = EINVAL;
 	return -1;
-insert_append:
-	if (key) {
-		size_t key_size_tmp = (key_data.size << LITE3_KEY_TAG_KEY_SIZE_SHIFT) | (key_tag_size - 1);
-		memcpy(buf + *inout_buflen, &key_size_tmp, key_tag_size);
-		*inout_buflen += key_tag_size;
-		memcpy(buf + *inout_buflen, key, (size_t)key_data.size);
-		*inout_buflen += (size_t)key_data.size;
-	}
-	*out = (lite3_val *)(buf + *inout_buflen);
-	*inout_buflen += LITE3_VAL_SIZE + val_len;
-	return 0;
 }
 
 int lite3_set_obj_impl(unsigned char *buf, size_t *restrict inout_buflen, size_t ofs, size_t bufsz, const char *restrict key, lite3_key_data key_data, size_t *restrict out_ofs)

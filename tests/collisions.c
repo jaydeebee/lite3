@@ -101,19 +101,12 @@ int main()
 				perror("Failed to insert key");
 				goto cleanup;
 			}
-			if (strcmp(prev_key, "YK") == 0 || strcmp(curr_key, "YK") == 0) {
-				printf("=========================================================\n");
-				printf("inserted YK\n");
-				printf("=========================================================\n");
-			}
 			memcpy(colliding_keys_arr + (uintptr_t)colliding_keys_buflen, prev_key, key_size * 2);
 			colliding_keys_buflen += key_size * 2;
 		}
 		prev_hash = hash;
 		prev_key = key_arr + (uintptr_t)i;
 	}
-
-	printf("colliding_keys_buflen: %zu\n", colliding_keys_buflen);
 
 	// for every key we inserted, can we actually find it back in the message?
 	for (int i = 0; i < (int)colliding_keys_buflen; i += (int)key_size) {

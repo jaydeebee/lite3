@@ -374,6 +374,9 @@ Limit attempts with `LITE3_HASH_PROBE_MAX` (defaults to 128). Probing cannot be 
     #error "LITE3_HASH_PROBE_MAX must be >= 2"
 #endif
 
+#define LITE3_VERIFY_KEY_OK 0
+#define LITE3_VERIFY_KEY_HASH_COLLISION 1
+
 /**
 Macro to calculate DJB2 key hashes at compile-time
 
