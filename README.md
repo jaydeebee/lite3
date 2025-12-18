@@ -441,7 +441,7 @@ The format has not yet been tested on ARM.
 - [ ] Built-in defragmentation with GC-index
 - [x] Full JSON interoperability with arrays & nested objects
 - [x] Opt-out compilation flag for `yyjson`
-- [ ] Handling key collisions
+- [x] Handling key collisions
 - [ ] Size benchmark for compression ratios using different codecs
 - [ ] Add language bindings
 - [ ] Write formal spec
