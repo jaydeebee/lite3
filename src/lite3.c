@@ -298,7 +298,9 @@ int lite3_get_impl(
 					return -1;
 				}
 			} else {
-				break; // key not in this probe
+				LITE3_PRINT_ERROR("KEY NOT FOUND\n");
+				errno = ENOENT;
+				return -1;
 			}
 		}
 	}
