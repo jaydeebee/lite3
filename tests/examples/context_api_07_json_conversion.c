@@ -27,38 +27,15 @@
       ___ __/ /___/ / / /_ /  __/____/ 
            /_____/_/  \__/ \___/       
 */
-#include "lite3.h"
+#include <stdlib.h>
+
+#define main lite3_example_context_api_07_main
+#include "../../examples/context_api/07-json-conversion.c"
+#undef main
 
 
 
-#ifdef LITE3_DEBUG
-#include <stdio.h>
-
-
-
-void lite3_print(const unsigned char *buf, size_t buflen)
+int main(void)
 {
-        for (size_t i = 0; i < buflen; i++) {
-                unsigned char c = buf[i];
-                if(c >= 0x20 && c <= 0x7E) {
-                        putchar(c);
-                        putchar(' ');
-                } else {
-                        putchar("0123456789ABCDEF"[c >> 4]);
-                        putchar("0123456789ABCDEF"[c & 0xF]);
-                }
-
-                if (!((i + 1) & 3)) {
-                        if (!((i + 1) & 63u)) {
-                                printf("\t%zu\n\n", i + 1);
-                        } else if (!((i + 1) & 31)) {
-                                putchar('\n');
-
-                        } else {
-                                putchar(' ');
-                        }
-                }
-        }
-        putchar('\n');
+        return lite3_example_context_api_07_main();
 }
-#endif // LITE3_DEBUG

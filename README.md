@@ -1,4 +1,4 @@
-# TRON (formerly known as Lite³): Tree Root Object Notation
+# Lite³: A JSON-Compatible Zero-Copy Serialization Format
 *Parse no more—the wire format is the memory format.*
 
 ![](img/lite3_landing_page.png)
