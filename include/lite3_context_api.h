@@ -1219,6 +1219,9 @@ Find value by key and return value type
 #ifndef DOXYGEN_IGNORE
 static inline enum lite3_type _lite3_ctx_get_type_impl(lite3_ctx *ctx, size_t ofs, const char *__restrict key, lite3_key_data key_data)
 {
+        // Short-circuit for root query:
+        if (!ofs && !key)
+                return *(ctx->buf + ofs);
         if (_lite3_verify_obj_get(ctx->buf, ctx->buflen, ofs) < 0)
                 return LITE3_TYPE_INVALID;
         lite3_val *val;
