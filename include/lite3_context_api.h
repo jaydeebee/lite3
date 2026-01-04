@@ -1253,6 +1253,20 @@ static inline enum lite3_type _lite3_ctx_arr_get_type_impl(
 #endif // DOXYGEN_IGNORE
 
 /**
+Get the type of the root container (object or array)
+
+@param[in]      ctx (`lite3_ctx *`) context pointer
+@return lite3_type on success (LITE3_TYPE_OBJECT or LITE3_TYPE_ARRAY)
+@return `LITE3_TYPE_INVALID` on error (empty/uninitialized buffer)
+*/
+static inline enum lite3_type lite3_ctx_get_root_type(lite3_ctx *ctx)
+{
+	if (_lite3_verify_get(ctx->buf, ctx->buflen, 0) < 0)
+		return LITE3_TYPE_INVALID;
+	return (enum lite3_type)(*(ctx->buf));
+}
+
+/**
 Find value by key and write back type size
 
 @param[in]      ctx (`lite3_ctx *`) context pointer

@@ -1759,6 +1759,22 @@ static inline enum lite3_type _lite3_get_type_impl(const unsigned char *buf, siz
 #endif // DOXYGEN_IGNORE
 
 /**
+Get the root type of a Lite³ buffer
+
+@param[in]      buf (`const unsigned char *`) buffer pointer
+@param[in]      buflen (`size_t`) buffer used length
+
+@return lite3_type on success (LITE3_TYPE_OBJECT or LITE3_TYPE_ARRAY)
+@return `LITE3_TYPE_INVALID` on error (empty or invalid buffer)
+*/
+static inline enum lite3_type lite3_get_root_type(const unsigned char *buf, size_t buflen)
+{
+        if (_lite3_verify_get(buf, buflen, 0) < 0)
+                return LITE3_TYPE_INVALID;
+        return (enum lite3_type)(*buf);
+}
+
+/**
 Find value by index and return value type
 
 @param[in]      buf (`const unsigned char *`) buffer pointer
