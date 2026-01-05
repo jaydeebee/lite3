@@ -185,7 +185,7 @@ For a complete How-to Guide with examples, see [the documentation](https://lite3
 | Command           | Description                                               |
 |-------------------|-----------------------------------------------------------|
 | `make all`        | Build the static library with -O2 optimizations (default) |
-| `make tests`      | Build and run all tests                                   |
+| `make tests`      | Build and run all tests (use VERBOSE=1 for stdout output) |
 | `make examples`   | Build all examples                                        |
 | `make install`    | Install library in `/usr/local` (for pkg-config)          |
 | `make uninstall`  | Uninstall library                                         |

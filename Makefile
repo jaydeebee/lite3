@@ -136,6 +136,7 @@ examples: CFLAGS += $(CFLAGS_DEBUG)
 examples: $(EXAMPLES_EXES)
 
 .PHONY: tests
+tests: VERBOSE ?= 0
 tests: CFLAGS += $(CFLAGS_DEBUG)
 tests: $(TESTS_EXES)
 	@echo "\033[1;34m========= Running Tests =========\033[0m"
@@ -143,7 +144,7 @@ tests: $(TESTS_EXES)
 	PASS=0; FAIL=0; \
 	for test in $(TESTS_EXES); do \
 		echo -n "\033[1;33m[RUN] $$(basename $$test)\033[0m ... "; \
-		if $$test; then \
+		if $$test $(if $(filter 1,$(VERBOSE)),,>/dev/null 2>&1); then \
 			echo "\033[1;32mPASS\033[0m"; \
 			PASS=$$((PASS+1)); \
 		else \
@@ -160,7 +161,7 @@ tests: $(TESTS_EXES)
 help:
 	@echo "Available targets:"
 	@echo "    all        - Build the static library with -O2 optimizations (default)"
-	@echo "    tests      - Build and run all tests"
+	@echo "    tests      - Build and run all tests (use VERBOSE=1 for stdout output)"
 	@echo "    examples   - Build all examples"
 	@echo "    install    - Install library in \`/usr/local\` (for pkg-config)"
 	@echo "    uninstall  - Uninstall library"
