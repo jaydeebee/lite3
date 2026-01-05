@@ -45,84 +45,36 @@ However Lite³ blurs the line between memory and wire formats, allowing direct a
 
 
 ## Code Example
-Lite³ is a binary format, but the examples print message data as JSON to `stdout` for better readability.
-
-Here is an example with error handling omitted for brevity, taken from `examples/buffer_api/01-building-messages.c`:
+(error handling omitted for brevity)
 ```C
 #include <stdio.h>
-#include <string.h>
 #include <stdbool.h>
 
 #include "lite3.h"
 
 
-static unsigned char buf[1024], rx[1024];
+uint8_t buf[1024];
+
 
 int main() {
-        size_t buflen = 0;
-        size_t bufsz = sizeof(buf);
+    size_t buflen = 0;
+    size_t bufsz = sizeof(buf);
 
-        // Build message
-        lite3_init_obj(buf, &buflen, bufsz);
-        lite3_set_str(buf, &buflen, 0, bufsz, "event", "lap_complete");
-        lite3_set_i64(buf, &buflen, 0, bufsz, "lap", 55);
-        lite3_set_f64(buf, &buflen, 0, bufsz, "time_sec", 88.427);
-        printf("buflen: %zu\n", buflen);
-        lite3_json_print(buf, buflen, 0); // Print Lite³ as JSON
+    lite3_init_obj(buf, &buflen, bufsz);
+    lite3_set_str(buf, &buflen, 0, bufsz, "app_name", "demo_app");
+    lite3_set_i64(buf, &buflen, 0, bufsz, "max_retries", 3);
+    lite3_set_bool(buf, &buflen, 0, bufsz, "debug_mode", false);
 
-        printf("\nUpdating lap count\n");
-        lite3_set_i64(buf, &buflen, 0, bufsz, "lap", 56);
-        printf("Data to send:\n");
-        printf("buflen: %zu\n", buflen);
-        lite3_json_print(buf, buflen, 0);
-        
-        // Transmit
-        size_t rx_buflen = buflen;
-        size_t rx_bufsz = sizeof(rx);
-        memcpy(rx, buf, buflen);
-        
-        // Mutate (zero-copy, no parsing)
-        printf("\nVerifying fastest lap\n");
-        lite3_set_str(rx, &rx_buflen, 0, rx_bufsz, "verified", "race_control");
-        lite3_set_bool(rx, &rx_buflen, 0, rx_bufsz, "fastest_lap", true);
-        printf("Modified data:\n");
-        printf("rx_buflen: %zu\n", rx_buflen);
-        lite3_json_print(rx, rx_buflen, 0);
+    int64_t max_retries;
+    lite3_get_i64(buf, buflen, 0, "max_retries", &max_retries);
+    printf("max retries: %li\n", max_retries);
 
-        // Ready to send:
-        // send(sock, rx, rx_buflen, 0);
-
-        return 0;
+    return 0;
 }
 ```
 Output:
 ```
-buflen: 154
-{
-    "lap": 55,
-    "event": "lap_complete",
-    "time_sec": 88.427
-}
-
-Updating lap count
-Data to send:
-buflen: 154
-{
-    "lap": 56,
-    "event": "lap_complete",
-    "time_sec": 88.427
-}
-
-Verifying fastest lap
-Modified data:
-rx_buflen: 197
-{
-    "lap": 56,
-    "event": "lap_complete",
-    "time_sec": 88.427,
-    "fastest_lap": true,
-    "verified": "race_control"
-}
+max retries: 3
 ```
 Lite³ provides an alternative API called the 'Context API' where memory management is abstracted away from the user.
 
