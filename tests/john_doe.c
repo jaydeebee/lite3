@@ -35,7 +35,7 @@
 #include "lite3.h"
 
 
-unsigned char buf[2048] __attribute__((aligned(LITE3_NODE_ALIGNMENT)));
+unsigned char buf[2048];
 
 
 int main()

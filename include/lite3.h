@@ -259,48 +259,20 @@ For safety reasons or to preserve resources, it may be desirable to set a lower 
 #define LITE3_BUF_SIZE_MAX      UINT32_MAX
 
 /**
-B-tree node alignment configuration
+B-tree node alignment
 
-Set to 4-byte alignment by default. For the vast majority of applications, this setting should never need changing.
+This determines the address alignment at which nodes are placed inside a Lite³ buffer.
 
-This determines the alignment at which nodes are placed inside a Lite³ buffer. `*buf` pointers passed to Lite³ functions must also be N-byte aligned according to LITE3_NODE_ALIGNMENT.
-The minimum alignment is 4 bytes according to the struct's largest member variable (uint32_t).
-A higher alignment setting will insert more padding and increase total message size.
-
-An alignment can be chosen such that nodes always start on cache line boundaries. In this case, the alignment should equal the cache line size of the target architecture (usually 64 bytes).
-Unlike node size, this setting can be changed without loss of compatibility with other configurations.
-
-Keep in mind that in many cases, the message bloat from increased padding will worsen performance more than any benefit from aligned node access.
-
-How to change: uncomment the preferred setting.
-
-@warning
-On 64-bit machines, libc malloc() only guarantees 16-byte alignment for allocations >= 16 byte. Using the default alignment, this should not be a problem.
-However, increasing the alignment setting might need specially aligned allocations. Failing to do so is confirmed to cause crashes on x86-64 with compiler optimizations enabled.  
-Stack alignment only works for global or static variables. Example of a properly aligned stack buffer (fixed-size only):
-```C
-        unsigned char buf[1024] __attribute__((aligned(LITE3_NODE_ALIGNMENT)));
-```
-For heap allocation, use manually aligned pointers or `aligned_alloc()`:
-```C
-        unsigned char *buf = aligned_alloc(LITE3_NODE_ALIGNMENT, 1024);
-
-        if (!buf) {
-                // handle allocation error
-        }
-```
-In builds compiled with -DNDEBUG there are no `assert()` protections against unaligned access potentially triggering a crash.
+Always set to 4-byte alignment according to the node struct's largest member variable (uint32_t).
+This setting cannot be changed.
 
 @important
-Do not change this setting unless performance profiling shows real improvements and you know what you are doing.
+The start of a message (the `*buf` pointer) MUST ALWAYS start on an address that is (at least) 4-byte aligned.
+On 64-bit machines, libc malloc() guarantees 16-byte alignment for allocations >= 16 bytes.
 
 @anchor lite3_node_alignment
 */
 #define LITE3_NODE_ALIGNMENT            4
-// #define LITE3_NODE_ALIGNMENT         8
-// #define LITE3_NODE_ALIGNMENT         16
-// #define LITE3_NODE_ALIGNMENT         32
-// #define LITE3_NODE_ALIGNMENT         64
 
 #ifndef DOXYGEN_IGNORE
 #define LITE3_NODE_ALIGNMENT_MASK       ((uintptr_t)(LITE3_NODE_ALIGNMENT - 1))

@@ -123,7 +123,7 @@ C11:
 /**
 The minimum buffer size for a Lite³ context
 
-Must be greater than `LITE3_NODE_ALIGNMENT`
+Must be greater than `LITE3_NODE_ALIGNMENT_MASK`
 
 @ingroup lite3_config
 */
@@ -193,9 +193,8 @@ The passed buffer will also be freed when you call `lite3_ctx_destroy()` on the 
 
 @warning
 1. Any context that is not reused for the lifetime of the program must be manually destroyed by `lite3_ctx_destroy()` to prevent memory leaks.
-2. `*buf` must be N-byte aligned according to `LITE3_NODE_ALIGNMENT`.
-On 64-bit machines, buffers allocated by libc `malloc()` always work with the default Lite³ configuration.
-Alignment should only become an issue if you use custom alignment (see @ref lite3_node_alignment).
+2. The start of a message (the `*buf` pointer) MUST ALWAYS start on an address that is (at least) 4-byte aligned.
+On 64-bit machines, libc malloc() guarantees 16-byte alignment for allocations >= 16 bytes.
 */
 lite3_ctx *lite3_ctx_create_take_ownership(
         unsigned char *buf,     ///< [in] buffer pointer (created by `malloc()`)

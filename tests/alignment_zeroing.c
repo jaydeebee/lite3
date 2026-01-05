@@ -38,7 +38,7 @@
 int main() {
 	#ifdef LITE3_ZERO_MEM_EXTRA
 
-	unsigned char buf[1024] __attribute__((aligned(LITE3_NODE_ALIGNMENT)));
+	unsigned char buf[1024];
 	size_t buflen = 0;
 	size_t bufsz = sizeof(buf);
 
