@@ -334,7 +334,7 @@ Set null in object
 static inline int lite3_ctx_set_null_impl(lite3_ctx *ctx, size_t ofs, const char *__restrict key, lite3_key_data key_data)
 {
         int ret;
-        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz)) < 0)
+        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz, key)) < 0)
                 return ret;
         lite3_val *val;
         errno = 0;
@@ -369,7 +369,7 @@ Set boolean in object
 static inline int _lite3_ctx_set_bool_impl(lite3_ctx *ctx, size_t ofs, const char *__restrict key, lite3_key_data key_data, bool value)
 {
         int ret;
-        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz)) < 0)
+        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz, key)) < 0)
                 return ret;
         lite3_val *val;
         errno = 0;
@@ -405,7 +405,7 @@ Set integer in object
 static inline int _lite3_ctx_set_i64_impl(lite3_ctx *ctx, size_t ofs, const char *__restrict key, lite3_key_data key_data, int64_t value)
 {
         int ret;
-        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz)) < 0)
+        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz, key)) < 0)
                 return ret;
         lite3_val *val;
         errno = 0;
@@ -441,7 +441,7 @@ Set floating point in object
 static inline int _lite3_ctx_set_f64_impl(lite3_ctx *ctx, size_t ofs, const char *__restrict key, lite3_key_data key_data, double value)
 {
         int ret;
-        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz)) < 0)
+        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz, key)) < 0)
                 return ret;
         lite3_val *val;
         errno = 0;
@@ -478,7 +478,7 @@ Set bytes in object
 static inline int _lite3_ctx_set_bytes_impl(lite3_ctx *ctx, size_t ofs, const char *__restrict key, lite3_key_data key_data, const unsigned char *__restrict bytes, size_t bytes_len)
 {
         int ret;
-        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz)) < 0)
+        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz, key)) < 0)
                 return ret;
         lite3_val *val;
         errno = 0;
@@ -519,7 +519,7 @@ If you know the length beforehand, it is more efficient to call `lite3_ctx_set_s
 static inline int _lite3_ctx_set_str_impl(lite3_ctx *ctx, size_t ofs, const char *__restrict key, lite3_key_data key_data, const char *__restrict str)
 {
         int ret;
-        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz)) < 0)
+        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz, key)) < 0)
                 return ret;
         lite3_val *val;
         size_t str_size = strlen(str) + 1;
@@ -561,7 +561,7 @@ Set string in object by length
 static inline int _lite3_ctx_set_str_n_impl(lite3_ctx *ctx, size_t ofs, const char *__restrict key, lite3_key_data key_data, const char *__restrict str, size_t str_len)
 {
         int ret;
-        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz)) < 0)
+        if ((ret = _lite3_verify_obj_set(ctx->buf, &ctx->buflen, ofs, ctx->bufsz, key)) < 0)
                 return ret;
         lite3_val *val;
         size_t str_size = str_len + 1;
@@ -595,15 +595,16 @@ Set object in object
 #define lite3_ctx_set_obj(ctx, ofs, key, out_ofs) ({ \
         lite3_ctx *__lite3_ctx__ = (ctx); \
         size_t __lite3_ofs__ = (ofs); \
+        const char *__lite3_key__ = (key); \
         int __lite3_ret__; \
         if ((__lite3_ret__ = _lite3_verify_obj_set( \
                 __lite3_ctx__->buf, \
                 &__lite3_ctx__->buflen, \
                 __lite3_ofs__, \
-                __lite3_ctx__->bufsz)) < 0) \
+                __lite3_ctx__->bufsz, \
+                __lite3_key__)) < 0) \
                 return __lite3_ret__; \
         \
-        const char *__lite3_key__ = (key); \
         errno = 0; \
         while ((__lite3_ret__ = lite3_set_obj_impl( \
                 __lite3_ctx__->buf, \
@@ -636,15 +637,16 @@ Set array in object
 #define lite3_ctx_set_arr(ctx, ofs, key, out_ofs) ({ \
         lite3_ctx *__lite3_ctx__ = (ctx); \
         size_t __lite3_ofs__ = (ofs); \
+        const char *__lite3_key__ = (key); \
         int __lite3_ret__; \
         if ((__lite3_ret__ = _lite3_verify_obj_set( \
                 __lite3_ctx__->buf, \
                 &__lite3_ctx__->buflen, \
                 __lite3_ofs__, \
-                __lite3_ctx__->bufsz)) < 0) \
+                __lite3_ctx__->bufsz, \
+                __lite3_key__)) < 0) \
                 return __lite3_ret__; \
         \
-        const char *__lite3_key__ = (key); \
         errno = 0; \
         while ((__lite3_ret__ = lite3_set_arr_impl( \
                 __lite3_ctx__->buf, \
@@ -1067,8 +1069,6 @@ static inline int lite3_ctx_arr_set_bytes(
         memcpy(val->val, &bytes_len, lite3_type_sizes[LITE3_TYPE_BYTES]);
         memcpy(val->val + lite3_type_sizes[LITE3_TYPE_BYTES], bytes, bytes_len);
         return ret;
-
-        return lite3_arr_set_bytes(ctx->buf, ctx->buflen, ofs, ctx->bufsz, index, bytes, bytes_len);
 }
 
 /**
@@ -1613,7 +1613,7 @@ Get bytes value by key
 #ifndef DOXYGEN_IGNORE
 static inline int _lite3_ctx_get_bytes_impl(lite3_ctx *ctx, size_t ofs, const char *__restrict key, lite3_key_data key_data, lite3_bytes *out)
 {
-        _lite3_get_bytes_impl(ctx->buf, ctx->buflen, ofs, key, key_data, out);
+        return _lite3_get_bytes_impl(ctx->buf, ctx->buflen, ofs, key, key_data, out);
 }
 #endif // DOXYGEN_IGNORE
 
