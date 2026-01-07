@@ -32,7 +32,6 @@
  * Tests for:
  * - lite3_arr_get_type() (buffer API)
  * - lite3_ctx_arr_get_type() (context API)
- * - lite3_ctx_get_type(ctx, 0, NULL) for root type queries
  */
 
 #include <stdio.h>
